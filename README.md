@@ -11,6 +11,17 @@ This action provides the following functionality for GitHub Actions users:
 - Optionally caching dependencies for pip, pipenv and poetry
 - Registering problem matchers for error output
 
+## What's new in V7
+
+- Migrated action internals to ESM for compatibility with latest `@actions/*` packages. No changes to action inputs, outputs, or behavior.
+
+## Breaking changes in V6
+
+- Upgraded action from node20 to node24
+  > Make sure your runner is on version v2.327.1 or later to ensure compatibility with this release. See [Release Notes](https://github.com/actions/runner/releases/tag/v2.327.1)
+
+For more details,  see the full release notes on the [releases page](https://github.com/actions/setup-python/releases/tag/v6.0.0)
+
 ## Basic usage
 
 See [action.yml](action.yml)
@@ -18,30 +29,40 @@ See [action.yml](action.yml)
 **Python**
 ```yaml
 steps:
-- uses: actions/checkout@v4
-- uses: actions/setup-python@v5
+- uses: actions/checkout@v7
+- uses: actions/setup-python@v7
   with:
-    python-version: '3.10' 
+    python-version: '3.13' 
 - run: python my_script.py
 ```
 
 **PyPy**
 ```yaml
 steps:
-- uses: actions/checkout@v4
-- uses: actions/setup-python@v5 
+- uses: actions/checkout@v7
+- uses: actions/setup-python@v7 
   with:
-    python-version: 'pypy3.9' 
+    python-version: 'pypy3.10' 
 - run: python my_script.py
 ```
 
 **GraalPy**
 ```yaml
 steps:
-- uses: actions/checkout@v4
-- uses: actions/setup-python@v5 
+- uses: actions/checkout@v7
+- uses: actions/setup-python@v7 
   with:
-    python-version: 'graalpy-22.3' 
+    python-version: 'graalpy-24.0' 
+- run: python my_script.py
+```
+
+**Free threaded Python**
+```yaml
+steps:
+- uses: actions/checkout@v7
+- uses: actions/setup-python@v7
+  with:
+    python-version: '3.13t'
 - run: python my_script.py
 ```
 
@@ -57,7 +78,7 @@ The `python-version` input supports the [Semantic Versioning Specification](http
 
 ## Supported architectures
 
-Using `architecture` input it is possible to specify the required Python or PyPy interpreter architecture: `x86` or `x64`. If the input is not specified the architecture defaults to `x64`.
+Using the `architecture` input, it is possible to specify the required Python or PyPy interpreter architecture: `x86`, `x64`, or `arm64`. If the input is not specified, the architecture defaults to the host OS architecture.
 
 ## Caching packages dependencies
 
@@ -73,16 +94,18 @@ The action defaults to searching for a dependency file (`requirements.txt` or `p
 
 ```yaml
 steps:
-- uses: actions/checkout@v4
-- uses: actions/setup-python@v5
+- uses: actions/checkout@v7
+- uses: actions/setup-python@v7
   with:
-    python-version: '3.9'
+    python-version: '3.13'
     cache: 'pip' # caching pip dependencies
 - run: pip install -r requirements.txt
 ```
 >**Note:** Restored cache will not be used if the requirements.txt file is not updated for a long time and a newer version of the dependency is available which can lead to an increase in total build time.
 
 >The requirements file format allows for specifying dependency versions using logical operators (for example chardet>=3.0.4) or specifying dependencies without any versions. In this case the pip install -r requirements.txt command will always try to install the latest available package version. To be sure that the cache will be used, please stick to a specific dependency version and update it manually if necessary.
+
+>The `setup-python` action does not handle authentication for pip when installing packages from private repositories. For help, refer [pip’s VCS support documentation](https://pip.pypa.io/en/stable/topics/vcs-support/) or visit the [pip repository](https://github.com/pypa/pip).
 
 See examples of using `cache` and `cache-dependency-path` for `pipenv` and `poetry` in the section: [Caching packages](docs/advanced-usage.md#caching-packages) of the [Advanced usage](docs/advanced-usage.md) guide.
 
@@ -98,6 +121,16 @@ See examples of using `cache` and `cache-dependency-path` for `pipenv` and `poet
 - [Using `setup-python` with a self-hosted runner](docs/advanced-usage.md#using-setup-python-with-a-self-hosted-runner)
 - [Using `setup-python` on GHES](docs/advanced-usage.md#using-setup-python-on-ghes)
 - [Allow pre-releases](docs/advanced-usage.md#allow-pre-releases)
+- [Using the pip-version input](docs/advanced-usage.md#using-the-pip-version-input)
+
+## Recommended permissions
+
+When using the `setup-python` action in your GitHub Actions workflow, it is recommended to set the following permissions to ensure proper functionality:
+
+```yaml
+permissions:
+  contents: read # access to check out code and install dependencies
+```
 
 ## License
 

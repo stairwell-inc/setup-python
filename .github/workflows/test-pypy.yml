@@ -11,6 +11,7 @@ on:
       - '**.md'
   schedule:
     - cron: 30 3 * * *
+  workflow_dispatch:
 
 jobs:
   setup-pypy:
@@ -19,23 +20,77 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-20.04, ubuntu-latest]
+        os:
+          [
+            ubuntu-22.04,
+            ubuntu-latest,
+            ubuntu-24.04-arm,
+            windows-latest,
+            macos-15-intel,
+            macos-latest
+          ]
         pypy:
-          - 'pypy-2.7'
-          - 'pypy-3.7'
-          - 'pypy3.9'
-          - 'pypy-2.7-v7.3.4'
-          - 'pypy-3.7-v7.3.5'
-          - 'pypy-3.7-v7.3.4'
-          - 'pypy-3.7-v7.3.x'
-          - 'pypy-3.7-v7.x'
-          - 'pypy-2.7-v7.3.4rc1'
-          - 'pypy-3.7-nightly'
-          - 'pypy3.8-v7.3.7'
+          - 'pypy-3.11'
+          - 'pypy-3.11-v7.3.23'
+          - 'pypy-3.11-v7.3.x'
+          - 'pypy-3.11-v7.x'
+          - 'pypy-3.11-nightly'
+          - 'pypy3.11-v7.3.23'
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: setup-python ${{ matrix.pypy }}
+        id: setup-python
+        uses: ./
+        with:
+          python-version: ${{ matrix.pypy }}
+
+      - name: Check python-path
+        run: ./__tests__/check-python-path.sh '${{ steps.setup-python.outputs.python-path }}'
+        shell: bash
+
+      - name: PyPy and Python version
+        run: python --version
+
+      - name: Run simple code
+        run: python -c 'import math; print(math.factorial(5))'
+
+      - name: Assert PyPy is running
+        run: |
+          import platform
+          assert platform.python_implementation().lower() == "pypy"
+        shell: python
+
+      - name: Assert expected binaries (or symlinks) are present
+        run: |
+          EXECUTABLE=${{ matrix.pypy }}
+          EXECUTABLE=${EXECUTABLE/pypy-/pypy}  # remove the first '-' in "pypy-X.Y" -> "pypyX.Y" to match executable name
+          EXECUTABLE=${EXECUTABLE%%-*}  # remove any -* suffixe
+          ${EXECUTABLE} --version
+        shell: bash
+
+  check-non-eol:
+    name: Check non-eol ${{ matrix.pypy }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          [
+            ubuntu-22.04,
+            ubuntu-latest,
+            ubuntu-24.04-arm,
+            windows-latest,
+            macos-15-intel,
+            macos-latest
+          ]
+        pypy: ['pypy-3.11']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: setup-python ${{ matrix.pypy }}
         id: setup-python
@@ -73,12 +128,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-20.04, ubuntu-latest]
-        pypy: ['pypy2.7', 'pypy3.7', 'pypy3.8', 'pypy3.9-nightly']
+        os:
+          [
+            ubuntu-22.04,
+            ubuntu-latest,
+            ubuntu-24.04-arm,
+            windows-latest,
+            macos-15-intel,
+            macos-latest
+          ]
+        pypy: ['pypy3.11-nightly', 'pypy3.11']
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: setup-python ${{ matrix.pypy }}
         id: setup-python
@@ -98,13 +161,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os:
+          [
+            ubuntu-22.04,
+            ubuntu-latest,
+            ubuntu-24.04-arm,
+            windows-latest,
+            macos-15-intel,
+            macos-latest
+          ]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Setup PyPy and check latest
         uses: ./
         with:
-          python-version: 'pypy-3.7-v7.3.x'
+          python-version: 'pypy-3.11-v7.3.x'
           check-latest: true
       - name: PyPy and Python version
         run: python --version
@@ -120,7 +191,7 @@ jobs:
 
       - name: Assert expected binaries (or symlinks) are present
         run: |
-          EXECUTABLE="pypy-3.7-v7.3.x"
+          EXECUTABLE="pypy-3.11-v7.3.x"
           EXECUTABLE=${EXECUTABLE/-/}  # remove the first '-' in "pypy-X.Y" -> "pypyX.Y" to match executable name
           EXECUTABLE=${EXECUTABLE%%-*}  # remove any -* suffixe
           ${EXECUTABLE} --version
@@ -131,15 +202,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os:
+          [
+            ubuntu-22.04,
+            ubuntu-latest,
+            ubuntu-24.04-arm,
+            windows-latest,
+            macos-15-intel,
+            macos-latest
+          ]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Setup PyPy and check latest
         uses: ./
         with:
           python-version: |
-            pypy-3.7-v7.3.x
-            pypy3.8
+            pypy-3.11-v7.3.x
+            pypy-3.10-v7.3.x
           check-latest: true
       - name: PyPy and Python version
         run: python --version
@@ -155,15 +234,15 @@ jobs:
 
       - name: Assert expected binaries (or symlinks) are present
         run: |
-          EXECUTABLE="pypy-3.7-v7.3.x"
+          EXECUTABLE="pypy-3.11-v7.3.x"
           EXECUTABLE=${EXECUTABLE/-/}  # remove the first '-' in "pypy-X.Y" -> "pypyX.Y" to match executable name
-          EXECUTABLE=${EXECUTABLE%%-*}  # remove any -* suffixe
+          EXECUTABLE=${EXECUTABLE%%-*}  # remove any -* suffix
           ${EXECUTABLE} --version
         shell: bash
       - name: Assert expected binaries (or symlinks) are present
         run: |
-          EXECUTABLE='pypy3.8'
+          EXECUTABLE='pypy-3.10-v7.3.x'
           EXECUTABLE=${EXECUTABLE/pypy-/pypy}  # remove the first '-' in "pypy-X.Y" -> "pypyX.Y" to match executable name
-          EXECUTABLE=${EXECUTABLE%%-*}  # remove any -* suffixe
+          EXECUTABLE=${EXECUTABLE%%-*}  # remove any -* suffix
           ${EXECUTABLE} --version
         shell: bash
